@@ -45,6 +45,13 @@ __check_fpath_tool() {
   [[ $out == *'First match wins'* ]]
 }
 
+__check_fpath_porcelain() {
+  local tool=$1
+  local out
+  out=$("$tool" --porcelain demo 2>/dev/null) || return 1
+  [[ $out == *'count='* && $out == *'shadowed='* ]]
+}
+
 __lint_case() {
   local checker=$1
   local want=$2
@@ -194,20 +201,28 @@ __main() {
   local harness=$skill_dir/scripts/test-completion.zsh
   local probe=$skill_dir/scripts/probe-help.zsh
   local fpath_tool=$skill_dir/scripts/check-fpath.zsh
+  local preflight=$skill_dir/scripts/preflight.zsh
+  local gate=$skill_dir/scripts/gate.zsh
   local checker=$skill_dir/scripts/check-completion.zsh
   local -i failed=0
 
   local -x TEST_COMPLETION_STARTUP_WAIT=${TEST_COMPLETION_STARTUP_WAIT:-1.5}
   local -x TEST_COMPLETION_CASE_WAIT=${TEST_COMPLETION_CASE_WAIT:-1}
 
+  # Новые скрипты должны хотя бы разбираться синтаксически. preflight/gate
+  # проверяются вручную и через сам preflight; self-check ловит только
+  # синтаксическую деградацию.
   __check "zsh -n _demo" zsh -n "$fixtures/_demo" || failed=1
   __check "zsh -n test-completion.zsh" zsh -n "$harness" || failed=1
   __check "zsh -n probe-help.zsh" zsh -n "$probe" || failed=1
   __check "zsh -n check-fpath.zsh" zsh -n "$fpath_tool" || failed=1
+  __check "zsh -n preflight.zsh" zsh -n "$preflight" || failed=1
+  __check "zsh -n gate.zsh" zsh -n "$gate" || failed=1
   __check "zsh -n check-completion.zsh" zsh -n "$checker" || failed=1
   __check "check-completion fixture" __check_completion_tool "$checker" "$fixtures/_demo" || failed=1
   __check "check-completion linter rules" __check_metadata_rules "$checker" || failed=1
   __check "check-fpath output" __check_fpath_tool "$fpath_tool" || failed=1
+  __check "check-fpath porcelain" __check_fpath_porcelain "$fpath_tool" || failed=1
 
   __check "frontmatter" __check_frontmatter "$skill_dir/SKILL.md" || failed=1
 

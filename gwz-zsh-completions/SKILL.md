@@ -81,6 +81,13 @@ reading template and help-parsing.
 
 ## Workflow
 
+0. Run `scripts/preflight.zsh <cmd>` and read the key=value report. Do not
+   generate when `cmd_path` is empty. If `existing_completion` is set, update
+   that file (`target`) only when `target_writable=yes`; otherwise stop. With no
+   existing file, choose a target deliberately from `target_candidates` (prefer
+   a directory that already holds `GWZCS-*` files) or ask the user. If `gate` is
+   not `pass`, L3 is unavailable: plan to finish at L1/L2 and report the skip.
+   `--fast` skips the gate and compinit probes.
 1. Fix `CMD`, aliases, and the target directory from `fpath`:
    `scripts/check-fpath.zsh <cmd>`.
 2. Check C1/C2 first: if a native completion is already reachable in `fpath`,
@@ -235,7 +242,12 @@ autoload -U _mycmd
   descriptions, escaping, debugging.
 - `references/anti-patterns.md` — historical mistakes, bash compatibility,
   system examples.
-- `scripts/check-fpath.zsh` — `FPATH`, interactive/clean `fpath`, shadowing.
+- `scripts/check-fpath.zsh` — `FPATH`, interactive/clean `fpath`, shadowing;
+  `--porcelain` prints key=value lines for the preflight.
+- `scripts/preflight.zsh` — key=value facts before generation (command,
+  fpath, target, help, PTY, gate, compinit); `--fast` skips gate/compinit.
+- `scripts/gate.zsh` — harness gate on the `_demo` fixture: 0 pass, 1 fail,
+  77 no PTY.
 - `scripts/check-completion.zsh` — linter for a generated `_cmd`.
 - `scripts/test-completion.zsh` — zpty harness with `--expect`/`--reject`.
 - `scripts/probe-help.zsh` — safe help collection with fallback.
