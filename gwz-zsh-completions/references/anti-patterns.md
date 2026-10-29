@@ -109,17 +109,6 @@ Process anti-patterns:
 - treating `--expect substring` as proof of an exact value;
 - reporting “all options verified” when only `--help` was checked.
 
-## Finding history
-
-```bash
-cd <path-to-zsh-users-clone>
-git log --oneline --grep='fix' -i | head -50
-git log -p --grep='fix' -i -- src/_file
-```
-
-Look for both additions and fixes: missing `:message:`, wrong `ret`, broken
-quotes, copy-paste, global variables.
-
 ## System examples
 
 - `_rpm` — state machine with `_call_function ret _rpm_<state>`, local option

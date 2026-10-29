@@ -52,17 +52,19 @@ seconds).
 
 Therefore check both the return code and the content. Help markers:
 
-- `Usage:` / `usage:`;
-- `Options:` / `Commands:` / `Available Commands:` / `Arguments:`;
+- `Usage:` / `usage:` / `USAGE:`;
+- `Options:` / `OPTIONS:` / `Commands:` / `COMMANDS:` /
+  `Available Commands:` / `Arguments:` / `ARGUMENTS:`;
 - lines starting with `-` or `--`.
 
 If `--help` did not produce help-like output, try in order:
 
 1. `cmd -h`;
 2. `cmd help`;
-3. `cmd --help-all`;
-4. `man cmd`;
-5. source, native upstream, or manual specs.
+3. `cmd help <sub>` or `cmd <sub> help` for a subcommand;
+4. `cmd --help-all`;
+5. `man cmd`;
+6. source, native upstream, or manual specs.
 
 Do not parse an error message as an option list.
 
@@ -85,6 +87,9 @@ Do not parse an error message as an option list.
 - An option line starts with `-` or `--` after indentation.
 - Split on **two or more spaces**, not single spaces: that is the only reliable
   way to separate the description column.
+- Do not assume the CLI accepts `--opt=value`; confirm via help, source, or a
+  harmless invocation. If it is rejected or treated as an extension flag, use
+  the separate-word form in the specs.
 - Error example: `grep --help`:
 
   ```text

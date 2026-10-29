@@ -35,10 +35,11 @@ reading template and help-parsing.
   `COMP_CWORD`, `BASH_COMP_*`, `_bash_completion`, bash arrays. This is an
   anti-pattern even when the script is shipped upstream.
 - Take the target directory from the active `fpath`; do not guess.
-  `scripts/preflight.zsh <cmd>` reports the interactive and clean `fpath`, every
-  `_cmd` copy, and `target_candidates`; use `scripts/check-fpath.zsh <cmd>` for
-  a human-readable view when diagnosing shadowing. If the target directory is
-  not first, explain the shadowing instead of writing silently.
+  `scripts/preflight.zsh <cmd>` reports the interactive and clean `fpath`, the
+  winning `_cmd`, `shadowed`, and `target_candidates`; use
+  `scripts/check-fpath.zsh <cmd>` for a human-readable list of every copy when
+  diagnosing shadowing. If the target directory is not first, explain the
+  shadowing instead of writing silently.
 - Do not scan `/` or the entire `$HOME`. Search only `fpath`, `.zshrc`,
   `.zshenv`, and the target directories; use `check-fpath.zsh` to locate copies,
   not `find /`.
@@ -53,8 +54,9 @@ reading template and help-parsing.
   determined and `n/a` when nothing is baked in (a delegating wrapper).
 - A helper must not be named `_cmd_<subcommand>` — that name belongs to the
   dispatch function. Use `__cmd_<name>` or `_cmd_helper_<name>`.
-- `=` is allowed only on long options. `{-t,--tools}'=[...]'` produces `-t=`
-  and breaks the short form.
+- `=` is allowed only on long options, and only after confirming the CLI
+  accepts `--opt=value`; otherwise use the separate-word form.
+  `{-t,--tools}'=[...]'` produces `-t=` and breaks the short form.
 - If global and subcommand options share a name, parse the top level with
   `'(-): :->command'` and `'(-)*:: :->args'`; otherwise the global option
   captures the subcommand option.
@@ -79,13 +81,19 @@ reading template and help-parsing.
 | C7 | Only a bash-compatible source exists | discard it, generate native zsh |
 | C8 | `--help` is missing or uninformative | man, `--help-all`, `help`, source, native upstream, manual specs |
 
+Generator spellings vary: `completion zsh`, `completion -s zsh`,
+`completions zsh`, `--generate-shell-completion zsh`. Check `--help` and use
+the spelling the tool documents.
+
 ## Workflow
 
 0. Run `scripts/preflight.zsh <cmd>` once per task and read `decision`,
-   `target`, `target_candidates`, and `verification`. Do not generate until the
-   decision is `try-generator`, `generate-from-help`, or `fallback-help` after
-   a writable target has been chosen. `--fast` skips gate and compinit, so it
-   reports `verification=unknown`; run the full preflight before claiming L3.
+   `target`, `target_candidates`, and `verification`. Use `cmd_version` for
+   `GWZCS-Program-Version`; when `shadowed=yes`, mention the other copy even if
+   `existing_completion` wins. Do not generate until the decision is
+   `try-generator`, `generate-from-help`, or `fallback-help` after a writable
+   target has been chosen. `--fast` skips gate and compinit, so it reports
+   `verification=unknown`; run the full preflight before claiming L3.
 1. Act on `decision`: `stop` ends the task; when the reason is
    `command-not-found`, ask whether to install the tool (install only when the
    user or the project's `AGENTS.md` allows it) and rerun preflight.
@@ -98,9 +106,10 @@ reading template and help-parsing.
    `generate-from-help` is C3; `fallback-help` is C8. `check-fpath.zsh` remains
    available for manual diagnosis; preflight already ran it.
 2. Collect help for every subcommand **through** `scripts/probe-help.zsh`.
-   Call help manually only if the script is unavailable. For
-   `fallback-help`, use C8 sources (man, `--help-all`, source, native
-   completion, manual specs) instead of guessing.
+   If it cannot produce help-like output for a subcommand (for example,
+   `--help` is taken as a positional), try `cmd help <sub>` or
+   `cmd <sub> help`, then man. For `fallback-help`, use C8 sources (man,
+   `--help-all`, source, native completion, manual specs) instead of guessing.
 3. Parse options, positional arguments, values, and aliases (`#compdef`).
 4. Choose an action for every argument: `_files`, `_directories`,
    `(a b c)`, `->state`, helper.
@@ -147,24 +156,11 @@ _mycmd_commands() {
   _describe -t commands 'mycmd command' commands
 }
 
-_mycmd_install() {
-  local ret=1
-  _arguments \
-    '(-C --cache-only)'{-C,--cache-only}'[do not download data]' \
-    '(-r --reboot)'{-r,--reboot}'[reboot after operation]' \
-    '--stateroot=[operate on STATEROOT]:stateroot:' \
-    '*:package:_mycmd_packages' && ret=0
-  return ret
-}
-
-_mycmd_packages() {
-  local -a pkgs
-  pkgs=( ${(f)"$(_call_program packages rpm -qa --qf '%{NAME}\\n' 2>/dev/null)"} )
-  _describe -t packages 'package' pkgs
-}
-
 _mycmd "$@"
 ```
+
+Subcommand functions, helpers, groups, and full option forms are in
+`references/template.md`.
 
 ## Verification
 
@@ -264,9 +260,11 @@ Check at least:
 
 `--expect` checks for a substring, so `--expect htop` also passes for
 `htop-3.4.1-...`. Use `--expect-exact` for exact checks or inspect the full
-output. The captured text includes the echoed command line, so `--expect` and
-`--reject` must not use a value that is itself part of the test line; the
-harness rejects such an assertion instead of passing on the echo.
+output. Assertion flags apply to every test line in one invocation; use
+separate invocations for different expectations. The captured text includes
+the echoed command line, so `--expect`, `--reject`, and `--expect-exact` must
+not use a value that is itself part of the test line; the harness rejects such
+an assertion instead of passing on the echo.
 
 ### Stop rules
 
@@ -287,14 +285,6 @@ State the level reached and the cases actually asserted:
 Do not write “all options verified” unless every option was asserted; list the
 cases instead.
 
-### Skill self-check
-
-Check the whole skill (from the skill directory):
-
-```zsh
-scripts/self-check.zsh
-```
-
 An already-open shell keeps the old completion in memory. Open a new terminal
 or run:
 
@@ -302,6 +292,18 @@ or run:
 unfunction _mycmd
 autoload -U _mycmd
 ```
+
+## Maintenance
+
+Check the whole skill after changing a script or reference:
+
+```zsh
+scripts/self-check.zsh
+```
+
+On a platform where the harness gate fails, self-check's TAB (and possibly
+probe) checks fail; treat that as the gate and check the static sections, not
+as a completion bug.
 
 ## Further reading
 

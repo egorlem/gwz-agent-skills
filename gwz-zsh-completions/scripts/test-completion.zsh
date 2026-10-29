@@ -5,9 +5,12 @@
 #   test-completion.zsh <fpath-dir> <command> [options] [test-line ...]
 #
 # Options:
-#   --expect TEXT        require TEXT in the output; must not be in the test line
-#   --reject TEXT        forbid TEXT in the output; must not be in the test line
-#   --expect-exact TEXT  require a line equal to TEXT or ending with " TEXT"
+#   --expect TEXT        require TEXT in every test line's output; must not be
+#                        part of the test line
+#   --reject TEXT        forbid TEXT in every test line's output; must not be
+#                        part of the test line
+#   --expect-exact TEXT  require a line equal to TEXT or ending with " TEXT";
+#                        must not be part of the test line
 #   --expect-empty    require no completion lines besides prompt redraw
 #   --help, -h        show this help
 #
@@ -37,9 +40,12 @@ __usage() {
   print -u2 "usage: $SCRIPT_NAME <fpath-dir> <command> [options] [test-line ...]"
   print -u2 ""
   print -u2 "options:"
-  print -u2 "  --expect TEXT        require TEXT in output; not in the test line"
-  print -u2 "  --reject TEXT        forbid TEXT in output; not in the test line"
-  print -u2 "  --expect-exact TEXT  require exact line or suffix"
+  print -u2 "  --expect TEXT        require TEXT in every test line's output;"
+  print -u2 "                       must not be part of the test line"
+  print -u2 "  --reject TEXT        forbid TEXT in every test line's output;"
+  print -u2 "                       must not be part of the test line"
+  print -u2 "  --expect-exact TEXT  require exact line or suffix; must not be"
+  print -u2 "                       part of the test line"
   print -u2 "  --expect-empty    require no completion lines"
   print -u2 "  --help, -h        show this help"
   print -u2 ""

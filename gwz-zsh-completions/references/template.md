@@ -223,15 +223,16 @@ _arguments \
 
 Rules:
 
-- `=` means the argument may also be given in the same word, separated by an
-  equals sign (`--opt=value`, `-x=value`); the separate-word form keeps working
-  (`zshcompsys`: `-optname=`).
+- `=` means the argument may also be given in the same word as
+  `--opt=value`; the separate-word form keeps working (`zshcompsys`:
+  `-optname=`). Confirm the CLI accepts `--opt=value` before using it; some
+  parsers treat it as an unknown/extension flag (for example, `pi`).
 - Braces must stay **outside** quotes so the alias expands:
-  `'(-t --tools)'{-t,--tools}'[desc]:tools:...'` is valid, and adding `=` there
-  (`{-t,--tools}'=[desc]:tools:...'`) is valid too.
-- `'{-t,--tools}=[desc]:tools:...'` with the whole spec quoted is invalid: zsh
-  fails with `invalid argument`. `'-t=[desc]:tools:...'` makes `-t=` the option
-  name.
+  `'(-t --tools)'{-t,--tools}'[desc]:tools:...'`.
+- Do not add `=` to a brace alias: `{-t,--tools}'=[...]'` produces `-t=` and
+  breaks the short form. `'{-t,--tools}=[desc]:tools:...'` with the whole spec
+  quoted is invalid: zsh fails with `invalid argument`.
+  `'-t=[desc]:tools:...'` makes `-t=` the option name.
 - Required argument: `:message:action`.
 - Optional argument: `::message:action`.
 - Repeatable option: `\*{-r,--recipient=}`.

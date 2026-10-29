@@ -26,9 +26,18 @@ __looks_like_help() {
   setopt extendedglob
 
   local text=$1
-  if [[ $text == *Usage:* || $text == *usage:* || $text == *Options:* ||
-        $text == *Commands:* || $text == *"Available Commands:"* ||
-        $text == *Arguments:* ]]; then
+  case $text in
+    (Error:*|error:*|*"Unknown option"*|*"unknown option"*|\
+     *"unrecognized option"*|*"illegal option"*|*"Missing expected argument"*)
+      return 1
+      ;;
+  esac
+
+  if [[ $text == *Usage:* || $text == *usage:* || $text == *USAGE:* ||
+        $text == *Options:* || $text == *OPTIONS:* ||
+        $text == *Commands:* || $text == *COMMANDS:* ||
+        $text == *"Available Commands:"* ||
+        $text == *Arguments:* || $text == *ARGUMENTS:* ]]; then
     return 0
   fi
 
@@ -59,10 +68,17 @@ __main() {
 
   local -a base=("$@")
   local mode out rc
-  for mode in --help -h help --help-all; do
+  for mode in --help -h help --help-all subhelp; do
     local -a argv=("${(@)base}")
     if [[ $mode == help ]]; then
-      argv+=(help)
+      if (( ${#base} > 1 )); then
+        argv=("${base[1]}" help "${base[2,-1]}")
+      else
+        argv=("${base[1]}" help)
+      fi
+    elif [[ $mode == subhelp ]]; then
+      (( ${#base} > 1 )) || continue
+      argv=("${(@)base}" help)
     else
       argv+=("$mode")
     fi
