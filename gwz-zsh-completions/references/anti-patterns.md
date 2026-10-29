@@ -70,7 +70,7 @@ the clone and time.
 | Hand-written completion | a file written manually on the side | `ai` from help, or `upstream` from the tool |
 | Metadata that disagrees with the file | `GWZCS-Program: foo` in `_bar` | must equal the file name and the first word of `#compdef` |
 | Bash-compatible completion | `bashcompinit`, `COMP_WORDS`, `PIP_AUTO_COMPLETE` | native `#compdef`/`_arguments` |
-| Missing version in the header | `# Completion for cmd` | `# Completion for cmd 1.2.3` or `version unknown` |
+| Missing version in the metadata block | no `GWZCS-Program-Version` | `# GWZCS-Program-Version: 1.2.3`, `unknown`, or `n/a` for a wrapper |
 | Writing into a shadowed directory | a file in a later `fpath`, with an earlier `_cmd` already present | `check-fpath.zsh`, update the first one or ask |
 | Broad scan | `find /`, `grep -R $HOME` | `check-fpath.zsh`, `fpath`, `.zshrc` |
 | Probing an argument with a mutating command | `rebase --opt` without dry-run | `--help`, man, source, `--dry-run` |

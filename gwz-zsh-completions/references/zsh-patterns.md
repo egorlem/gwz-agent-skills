@@ -38,9 +38,11 @@ repository, the `completion-style-guide` shipped with zsh, and
 
 - Two spaces for indentation, four for continuations, LF line endings, no tabs.
 - Long spec strings may exceed the line limit; do not wrap them.
-- Header: `#compdef`, `# Completion for <cmd> <version>.`, Description,
-  Authors. Version comes from `--version` or the package manager; otherwise use
-  `version unknown`.
+- Header: `#compdef`, then the `GWZCS-*` key block (`GWZCS-Schema`,
+  `GWZCS-Program`, `GWZCS-Program-Version`, `GWZCS-Completion-Source`); no prose
+  line and no `# Authors:` (see `template.md`). Version comes from `--version`
+  or the package manager (strip a leading `v`); use `unknown` when it cannot be
+  determined and `n/a` for a delegating wrapper.
 - Modeline:
 
   ```zsh
