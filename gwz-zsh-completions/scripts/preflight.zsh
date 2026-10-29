@@ -17,6 +17,8 @@
 #   _preflight_run     — цепочка: вызывает функции по порядку и после каждой
 #                        завершившейся части печатает её поля через
 #                        _preflight_emit.
+#   _preflight_decide  — последний этап: по собранным фактам выбирает
+#                        следующее действие и доступные уровни проверки.
 #
 # Отчёт всегда полный: если этап пропущен (нет команды, --fast), печатаются
 # значения по умолчанию из PREFLIGHT_DEFAULTS.
@@ -59,6 +61,9 @@ typeset -A PREFLIGHT_DEFAULTS=(
   gate                skip
   gate_detail         ''
   compinit            skip
+  decision            ''
+  decision_reason     ''
+  verification        unknown
 )
 # Единственное место, где перечислены все поля отчёта и их значения по
 # умолчанию. Добавили поле — добавили строку здесь и в _preflight_emit.
@@ -350,6 +355,57 @@ _preflight_compinit() {
 }
 
 # ---------------------------------------------------------------------------
+# Решение
+# ---------------------------------------------------------------------------
+
+_preflight_decide() {
+  if [[ -z ${PREFLIGHT[cmd_path]} ]]; then
+    PREFLIGHT[decision]=stop
+    PREFLIGHT[decision_reason]=command-not-found
+    PREFLIGHT[verification]=none
+    return
+    # Без команды нечего генерировать и нечего проверять.
+  fi
+
+  if [[ -n ${PREFLIGHT[existing_completion]} ]]; then
+    PREFLIGHT[decision]=use-existing
+    PREFLIGHT[decision_reason]=native-completion-exists
+    # C1/C2: нативный комплишен уже выигрывает в fpath. По умолчанию его
+    # используют, а не дублируют; обновление — только по явному запросу.
+  elif [[ ${PREFLIGHT[target_source]} == none || ${PREFLIGHT[target_writable]} != yes ]]; then
+    PREFLIGHT[decision]=choose-target
+    PREFLIGHT[decision_reason]=no-writable-target
+    # Цель не выбрана автоматически или недоступна для записи: нужно решение
+    # человека/агента, а не генерация вслепую.
+  elif [[ ${PREFLIGHT[completion_hint]} == yes ]]; then
+    PREFLIGHT[decision]=try-generator
+    PREFLIGHT[decision_reason]=help-mentions-completion
+    # C0: сначала проверить `cmd completion zsh`, только потом писать руками.
+  elif [[ ${PREFLIGHT[help]} == ok ]]; then
+    PREFLIGHT[decision]=generate-from-help
+    PREFLIGHT[decision_reason]=help-available
+    # C3: обычная генерация из --help.
+  else
+    PREFLIGHT[decision]=fallback-help
+    PREFLIGHT[decision_reason]=help-missing
+    # C8: man, --help-all, исходники, нативный комплишен.
+  fi
+
+  if [[ ${PREFLIGHT[gate]} == skip || ${PREFLIGHT[compinit]} == skip ]]; then
+    PREFLIGHT[verification]=unknown
+    # --fast не проверял возможность L2/L3; не выдаём предположение за факт.
+    return
+  fi
+
+  local -a levels=( l1 )
+  [[ ${PREFLIGHT[compinit]} == ok ]] && levels+=(l2)
+  [[ ${PREFLIGHT[gate]} == pass ]] && levels+=(l3)
+  PREFLIGHT[verification]=${(j:-:)levels}
+  # L1 возможен всегда; L2 — если compinit создал карту регистрации;
+  # L3 — только если gate подтвердил, что harness работает.
+}
+
+# ---------------------------------------------------------------------------
 # Цепочка
 # ---------------------------------------------------------------------------
 
@@ -392,6 +448,9 @@ _preflight_run() {
 
   _preflight_compinit
   _preflight_emit compinit
+
+  _preflight_decide
+  _preflight_emit decision decision_reason verification
 
   [[ -n ${PREFLIGHT[cmd_path]} ]] || return 3
   # Команды нет: отчёт уже напечатан для диагностики, но код возврата говорит

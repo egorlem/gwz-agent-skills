@@ -310,6 +310,8 @@ autoload -U _mycmd
 - [ ] Exclusions and groups do not conflict.
 - [ ] Descriptions contain no stray `:`, `[`, `]`.
 - [ ] `ret` is correct.
-- [ ] `zsh -n`, `test-completion.zsh` with `--expect`/`--reject`, and
-  `self-check.zsh` pass.
+- [ ] L1 (syntax + lint) and L2 (registration + dispatch) pass.
+- [ ] L3 only when `preflight.verification` includes `l3`; otherwise reported
+  as skipped.
+- [ ] `self-check.zsh` passes.
 - [ ] Shell restarted or the function reloaded.

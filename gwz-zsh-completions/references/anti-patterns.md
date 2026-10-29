@@ -155,4 +155,4 @@ quotes, copy-paste, global variables.
 - [ ] Positional arguments come from `Arguments:`/`Usage:`.
 - [ ] Exclusion groups and negation pairs checked.
 - [ ] `ret` is correct, variables are local, `_arguments` flags precede specs.
-- [ ] `zsh -n` and `zpty` tests pass.
+- [ ] L1/L2 pass; L3 only with `gate=pass` (see `SKILL.md` → Verification).

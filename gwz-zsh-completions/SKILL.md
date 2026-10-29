@@ -35,9 +35,9 @@ reading template and help-parsing.
   `COMP_CWORD`, `BASH_COMP_*`, `_bash_completion`, bash arrays. This is an
   anti-pattern even when the script is shipped upstream.
 - Take the target directory from the active `fpath`; do not guess.
-  Before choosing it, run `scripts/check-fpath.zsh <cmd>`: it shows the
-  environment `FPATH`, the interactive `fpath`, the clean `fpath` without
-  `FPATH`, and every `_cmd` copy in priority order. If the target directory is
+  `scripts/preflight.zsh <cmd>` reports the interactive and clean `fpath`, every
+  `_cmd` copy, and `target_candidates`; use `scripts/check-fpath.zsh <cmd>` for
+  a human-readable view when diagnosing shadowing. If the target directory is
   not first, explain the shadowing instead of writing silently.
 - Do not scan `/` or the entire `$HOME`. Search only `fpath`, `.zshrc`,
   `.zshenv`, and the target directories; use `check-fpath.zsh` to locate copies,
@@ -81,26 +81,29 @@ reading template and help-parsing.
 
 ## Workflow
 
-0. Run `scripts/preflight.zsh <cmd>` and read the key=value report. Do not
-   generate when `cmd_path` is empty. If `existing_completion` is set, update
-   that file (`target`) only when `target_writable=yes`; otherwise stop. With no
-   existing file, choose a target deliberately from `target_candidates` (prefer
-   a directory that already holds `GWZCS-*` files) or ask the user. If `gate` is
-   not `pass`, L3 is unavailable: plan to finish at L1/L2 and report the skip.
-   `--fast` skips the gate and compinit probes.
-1. Fix `CMD`, aliases, and the target directory from `fpath`:
-   `scripts/check-fpath.zsh <cmd>`.
-2. Check C1/C2 first: if a native completion is already reachable in `fpath`,
-   use it and stop. Otherwise, if the tool ships its own generator (C0),
-   materialize its output and verify it; do not rewrite it by hand.
-3. Collect help for every subcommand **through** `scripts/probe-help.zsh`.
-   Call help manually only if the script is unavailable.
-4. Parse options, positional arguments, and values.
-5. Choose an action for every argument: `_files`, `_directories`,
+0. Run `scripts/preflight.zsh <cmd>` once per task and read `decision`,
+   `target`, `target_candidates`, and `verification`. Do not generate until the
+   decision is `try-generator`, `generate-from-help`, or `fallback-help` after
+   a writable target has been chosen. `--fast` skips gate and compinit, so it
+   reports `verification=unknown`; run the full preflight before claiming L3.
+1. Act on `decision`: `stop` ends the task; `use-existing` means the native
+   file already wins (update only on an explicit request); `choose-target`
+   requires a writable directory from `target_candidates` or a question to the
+   user; `try-generator` means check C0 (`cmd completion zsh`) and use its
+   output when it exists; `generate-from-help` is C3; `fallback-help` is C8.
+   `check-fpath.zsh` remains available for manual diagnosis; preflight already
+   ran it.
+2. Collect help for every subcommand **through** `scripts/probe-help.zsh`.
+   Call help manually only if the script is unavailable. For
+   `fallback-help`, use C8 sources (man, `--help-all`, source, native
+   completion, manual specs) instead of guessing.
+3. Parse options, positional arguments, values, and aliases (`#compdef`).
+4. Choose an action for every argument: `_files`, `_directories`,
    `(a b c)`, `->state`, helper.
-6. Generate the file using `references/template.md`.
-7. Verify: `zsh -n`, `scripts/check-completion.zsh _cmd`, a real TAB through
-   `zpty` + `compinit`, then `scripts/self-check.zsh`.
+5. Generate the file using `references/template.md`.
+6. Verify in levels (see Verification): L1 syntax + lint, L2 registration +
+   dispatch, L3 a real TAB only when `preflight.verification` includes `l3`.
+   Stop at the highest level the environment supports and report it.
 
 ## Minimal skeleton
 
@@ -161,19 +164,32 @@ _mycmd "$@"
 
 ## Verification
 
+Verification has three levels. Run them in order, stop at the highest level the
+environment supports, and report that level.
+
+| Level | Check | Passes when |
+| --- | --- | --- |
+| L1 | `zsh -n _cmd`, `scripts/check-completion.zsh _cmd` | both exit 0 |
+| L2 | registration and dispatch (below) | `_comps[cmd] == _cmd`; every dispatched `_cmd_<sub>` is defined |
+| L3 | a real TAB through `zpty` (below) | every asserted case passes |
+
+### Gate
+
+L3 needs a working harness. `preflight.zsh` reports it as `gate` and
+`verification`: run L3 only when `verification` includes `l3` (`gate=pass`). If
+the gate failed or was skipped (`--fast`), do not run L3 and do not change
+`_cmd` because of it. Finish at L2 and report
+`L3 skipped (gate failed)` or `L3 skipped (not probed)`.
+
+`scripts/gate.zsh` reproduces the result directly: 0 pass, 1 fail, 77 no PTY.
+It exercises `tests/fixtures/_demo`, not the target file.
+
+### L1: syntax and lint
+
 ```zsh
 zsh -n _mycmd
 scripts/check-completion.zsh _mycmd
 ```
-
-Then test a real TAB (skill file paths are relative to the skill directory):
-
-```zsh
-# from the skill directory
-scripts/test-completion.zsh <fpath-dir> mycmd
-```
-
-`<fpath-dir>` is any directory from the active `fpath`; do not hardcode it.
 
 Generator output (C0) is a delegating wrapper, not hand-written code: its
 metadata block carries `GWZCS-Program-Version: n/a`, it references
@@ -195,6 +211,29 @@ Trust rules by source (see `references/template.md`):
 So a failing body check on an `upstream` file is a signal that the metadata is
 wrong (the file is not what its header claims), not an invitation to edit it.
 
+### L2: registration and dispatch
+
+```zsh
+zsh -f -c 'fpath=(<dir> $fpath); autoload -Uz compinit; compinit -u -d <tmp>;
+  print -r -- "comp=${_comps[cmd]}"; whence -v _cmd'
+```
+
+`comp` must be `_cmd`. Then check the dispatch statically: every label in
+`case $words[1]` maps to a defined `_cmd_<sub>` (or falls back to `_default`),
+and every helper the file calls is defined. L2 does not execute `_arguments`
+and does not verify matches.
+
+### L3: behavior
+
+Test a real TAB (skill file paths are relative to the skill directory):
+
+```zsh
+# from the skill directory
+scripts/test-completion.zsh <fpath-dir> mycmd
+```
+
+`<fpath-dir>` is any directory from the active `fpath`; do not hardcode it.
+
 With assertions:
 
 ```zsh
@@ -204,12 +243,6 @@ scripts/test-completion.zsh <fpath-dir> mycmd \
 
 For slow dynamic completions, increase `TEST_COMPLETION_STARTUP_WAIT` and
 `TEST_COMPLETION_CASE_WAIT`.
-
-Check the whole skill (from the skill directory):
-
-```zsh
-scripts/self-check.zsh
-```
 
 Check at least:
 
@@ -222,8 +255,34 @@ Check at least:
 
 `--expect` checks for a substring, so `--expect htop` also passes for
 `htop-3.4.1-...`. Use `--expect-exact` for exact checks or inspect the full
-output. Do not write “all options verified” in the final report if the harness
-only checked `--help`; list what was actually asserted.
+output.
+
+### Stop rules
+
+- Do not run L3 when `verification` does not include `l3`.
+- Two failed attempts on the same L3 case: stop editing the completion. Fix the
+  harness (or report the skip) instead of trying another spec variant.
+- If verification takes longer than generation, stop at the level reached.
+- A skipped level is a valid result; an unverified claim is not.
+
+### Report
+
+State the level reached and the cases actually asserted:
+
+- `L1 pass; L2 pass (registration _cmd, dispatch 8/8); L3 pass (mycmd <TAB>, mycmd install --, mycmd --mode)`
+- `L1 pass; L2 pass; L3 skipped (gate failed)`
+- `L1 pass; L2 skipped (compinit failed); L3 skipped (not probed)`
+
+Do not write “all options verified” unless every option was asserted; list the
+cases instead.
+
+### Skill self-check
+
+Check the whole skill (from the skill directory):
+
+```zsh
+scripts/self-check.zsh
+```
 
 An already-open shell keeps the old completion in memory. Open a new terminal
 or run:
@@ -244,8 +303,8 @@ autoload -U _mycmd
   system examples.
 - `scripts/check-fpath.zsh` — `FPATH`, interactive/clean `fpath`, shadowing;
   `--porcelain` prints key=value lines for the preflight.
-- `scripts/preflight.zsh` — key=value facts before generation (command,
-  fpath, target, help, PTY, gate, compinit); `--fast` skips gate/compinit.
+- `scripts/preflight.zsh` — key=value facts and the `decision`/
+  `verification` fields; `--fast` skips gate/compinit.
 - `scripts/gate.zsh` — harness gate on the `_demo` fixture: 0 pass, 1 fail,
   77 no PTY.
 - `scripts/check-completion.zsh` — linter for a generated `_cmd`.

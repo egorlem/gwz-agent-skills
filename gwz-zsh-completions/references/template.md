@@ -412,18 +412,9 @@ _mycmd_sub() {
 
 ## Final verification
 
-```zsh
-zsh -n _mycmd
+Run the levels in `SKILL.md` → Verification. L3 only when
+`scripts/preflight.zsh <cmd>` reports `verification` with `l3`; otherwise stop
+at L2 and report the skip.
 
-# from the skill directory
-scripts/check-completion.zsh _mycmd
-scripts/test-completion.zsh <fpath-dir> mycmd \
-  --expect --help --expect --version \
-  $'mycmd --\t'
-
-# skill self-check against the fixture
-scripts/self-check.zsh
-```
-
-Check: commands, subcommands, `--<TAB>`, `--opt=<TAB>`, `--opt <TAB>`, an
-ambiguous prefix, and a path with spaces.
+At L3, check at least: commands, subcommands, `--<TAB>`, `--opt=<TAB>`,
+`--opt <TAB>`, an ambiguous prefix, and a path with spaces.
