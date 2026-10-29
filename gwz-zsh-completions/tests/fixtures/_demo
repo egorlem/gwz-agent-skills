@@ -1,0 +1,139 @@
+#compdef demo demo-alt
+
+# GWZCS-Schema: 1
+# GWZCS-Program: demo
+# GWZCS-Program-Version: unknown
+# GWZCS-Completion-Source: ai
+
+_demo() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local ret=1
+
+  if [[ $service == demo-alt ]]; then
+    _demo_alt
+    return $?
+  fi
+
+  _arguments -C \
+    '(-h --help)'{-h,--help}'[show help]' \
+    '--mode=[global mode]:mode:(alpha beta)' \
+    '(-): :->command' \
+    '(-)*:: :->args' && ret=0
+
+  case $state in
+    (command)
+      _demo_commands && ret=0
+      ;;
+    (args)
+      local func="_demo_${words[1]//-/_}"
+      if (( $+functions[$func] )); then
+        $func && ret=0
+      else
+        _default && ret=0
+      fi
+      ;;
+  esac
+
+  return ret
+}
+
+_demo_commands() {
+  local -a commands=(
+    'install:install packages'
+    'remote:manage remotes'
+    'status:show status'
+  )
+  _describe -t commands 'demo command' commands
+}
+
+_demo_install() {
+  local ret=1
+  _arguments \
+    '--force[force operation]' \
+    '--mode=[install mode]:mode:(xray yankee)' \
+    '--repo=[repository path]:path:_directories' \
+    '--note=[note with \[brackets\] and \: colon]:note:' \
+    '*:package:_files' && ret=0
+  return ret
+}
+
+_demo_status() {
+  local ret=1
+  _arguments \
+    '--json[output JSON]' && ret=0
+  return ret
+}
+
+_demo_remote() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local ret=1
+
+  _arguments -C \
+    '1:command:_demo_remote_commands' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    (args)
+      local func="_demo_remote_${words[1]//-/_}"
+      if (( $+functions[$func] )); then
+        $func && ret=0
+      else
+        _default && ret=0
+      fi
+      ;;
+  esac
+
+  return ret
+}
+
+_demo_remote_commands() {
+  local -a commands=(
+    'add:add remote'
+    'remove:remove remote'
+  )
+  _describe -t commands 'demo remote command' commands
+}
+
+_demo_remote_add() {
+  local ret=1
+  _arguments \
+    '--fetch[fetch after add]' \
+    '*:remote:_files' && ret=0
+  return ret
+}
+
+_demo_remote_remove() {
+  local ret=1
+  _arguments \
+    '*:remote:_files' && ret=0
+  return ret
+}
+
+_demo_alt() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local ret=1
+
+  _arguments -C \
+    '1:command:_demo_alt_commands' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    (args)
+      _arguments '--alt-flag[alt flag]' && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_demo_alt_commands() {
+  local -a commands=(
+    'alt:alt command'
+  )
+  _describe -t commands 'demo-alt command' commands
+}
+
+_demo "$@"
