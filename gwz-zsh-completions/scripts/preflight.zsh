@@ -372,11 +372,19 @@ _preflight_decide() {
     PREFLIGHT[decision_reason]=native-completion-exists
     # C1/C2: нативный комплишен уже выигрывает в fpath. По умолчанию его
     # используют, а не дублируют; обновление — только по явному запросу.
-  elif [[ ${PREFLIGHT[target_source]} == none || ${PREFLIGHT[target_writable]} != yes ]]; then
+  elif [[ ${PREFLIGHT[target_source]} == none ]]; then
     PREFLIGHT[decision]=choose-target
-    PREFLIGHT[decision_reason]=no-writable-target
-    # Цель не выбрана автоматически или недоступна для записи: нужно решение
-    # человека/агента, а не генерация вслепую.
+    if [[ -n ${PREFLIGHT[target_candidates]} ]]; then
+      PREFLIGHT[decision_reason]=target-not-selected
+      # Кандидаты есть, но preflight сознательно не выбирает за пользователя.
+    else
+      PREFLIGHT[decision_reason]=no-writable-target
+      # В fpath нет ни одного записываемого каталога.
+    fi
+  elif [[ ${PREFLIGHT[target_writable]} != yes ]]; then
+    PREFLIGHT[decision]=choose-target
+    PREFLIGHT[decision_reason]=target-not-writable
+    # Цель известна, но писать в неё нельзя.
   elif [[ ${PREFLIGHT[completion_hint]} == yes ]]; then
     PREFLIGHT[decision]=try-generator
     PREFLIGHT[decision_reason]=help-mentions-completion

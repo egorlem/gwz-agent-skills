@@ -50,6 +50,7 @@ __main() {
   local file=$1
   if [[ ! -f $file ]]; then
     print -u2 "not a file: $file"
+    print -u2 "pass a path to a generated _cmd, not a command name"
     return 2
   fi
 

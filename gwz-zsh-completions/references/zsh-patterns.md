@@ -128,6 +128,22 @@ esac
 
 `curcontext` matters for subcommand styles and caches.
 
+### `words` and `CURRENT` at each level
+
+`words` is not the same array at every level. Do not assume `words[1]` is the
+command name:
+
+| Context | `words` starts at | Notes |
+| --- | --- | --- |
+| top-level `case $state` (from `*::...:->state`) | the subcommand | the command name is already removed; `words[1]` is the subcommand |
+| subcommand `_arguments` | the subcommand | its positional arguments follow; `words[1]` is still the subcommand |
+| action helper for `*:...:->state` | the previous normal word | the subcommand is not in `words`; `CURRENT` is relative to this slice |
+
+When a helper indexes `$words[CURRENT-1]`, first log the array:
+`print -r -- "CURRENT=$CURRENT words=(${(j: :)words})"`. The values change
+between these contexts; guessing them is a common source of off-by-one
+completion bugs.
+
 ### Global vs subcommand option collisions
 
 If `--mode` exists both at the top level and inside `cmd install`, a plain

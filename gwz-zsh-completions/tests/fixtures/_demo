@@ -132,6 +132,7 @@ _demo_alt() {
 _demo_alt_commands() {
   local -a commands=(
     'alt:alt command'
+    'status:status command'
   )
   _describe -t commands 'demo-alt command' commands
 }

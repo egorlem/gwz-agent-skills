@@ -5,8 +5,8 @@
 #   test-completion.zsh <fpath-dir> <command> [options] [test-line ...]
 #
 # Options:
-#   --expect TEXT        require TEXT as a substring in every test-line
-#   --reject TEXT        forbid TEXT as a substring in every test-line
+#   --expect TEXT        require TEXT in the output; must not be in the test line
+#   --reject TEXT        forbid TEXT in the output; must not be in the test line
 #   --expect-exact TEXT  require a line equal to TEXT or ending with " TEXT"
 #   --expect-empty    require no completion lines besides prompt redraw
 #   --help, -h        show this help
@@ -37,8 +37,8 @@ __usage() {
   print -u2 "usage: $SCRIPT_NAME <fpath-dir> <command> [options] [test-line ...]"
   print -u2 ""
   print -u2 "options:"
-  print -u2 "  --expect TEXT        require TEXT as substring"
-  print -u2 "  --reject TEXT        forbid TEXT as substring"
+  print -u2 "  --expect TEXT        require TEXT in output; not in the test line"
+  print -u2 "  --reject TEXT        forbid TEXT in output; not in the test line"
   print -u2 "  --expect-exact TEXT  require exact line or suffix"
   print -u2 "  --expect-empty    require no completion lines"
   print -u2 "  --help, -h        show this help"
@@ -146,7 +146,7 @@ __main() {
   trap "zpty -d ${(q)session} 2>/dev/null; rm -rf ${(q)dumpdir}" EXIT INT TERM
 
   zpty -w "$session" \
-    "fpath=(${(q)fpath_dir} \$fpath); autoload -Uz compinit; compinit -u -d ${(q)dumpfile}; PROMPT='READY> '; unsetopt zle_bracketed_paste 2>/dev/null"
+    "stty rows 40 columns 160 2>/dev/null; LISTMAX=10000; fpath=(${(q)fpath_dir} \$fpath); autoload -Uz compinit; compinit -u -d ${(q)dumpfile}; PROMPT='READY> '; unsetopt zle_bracketed_paste 2>/dev/null"
 
   local startup_wait=${TEST_COMPLETION_STARTUP_WAIT:-2}
   local case_wait=${TEST_COMPLETION_CASE_WAIT:-1}
@@ -184,6 +184,11 @@ __main() {
 
       local expected
       for expected in "${(@)expects}"; do
+        if [[ $test_line == *"$expected"* ]]; then
+          print -r -- "  invalid: '$expected' is part of the test line; assert the completion output, not the echo"
+          case_failed=1
+          continue
+        fi
         if [[ $clean == *"$expected"* ]]; then
           print -r -- "  ok: $expected"
         else
@@ -194,6 +199,11 @@ __main() {
 
       local rejected
       for rejected in "${(@)rejects}"; do
+        if [[ $test_line == *"$rejected"* ]]; then
+          print -r -- "  invalid: rejected '$rejected' is part of the test line"
+          case_failed=1
+          continue
+        fi
         if [[ $clean == *"$rejected"* ]]; then
           print -r -- "  unexpected: $rejected"
           case_failed=1
@@ -202,6 +212,11 @@ __main() {
 
       local exact found
       for exact in "${(@)exacts}"; do
+        if [[ $test_line == *"$exact"* ]]; then
+          print -r -- "  invalid: '$exact' is part of the test line"
+          case_failed=1
+          continue
+        fi
         found=0
         for line in "${(@)lines}"; do
           line=${line%%[[:space:]]#}

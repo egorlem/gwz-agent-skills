@@ -4,7 +4,7 @@ description: Generate, update, and review native zsh completion files (`_command
 license: WTFPL
 compatibility: Requires zsh with compinit; the test harness uses zpty.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Generating zsh completions
@@ -86,13 +86,17 @@ reading template and help-parsing.
    decision is `try-generator`, `generate-from-help`, or `fallback-help` after
    a writable target has been chosen. `--fast` skips gate and compinit, so it
    reports `verification=unknown`; run the full preflight before claiming L3.
-1. Act on `decision`: `stop` ends the task; `use-existing` means the native
-   file already wins (update only on an explicit request); `choose-target`
-   requires a writable directory from `target_candidates` or a question to the
-   user; `try-generator` means check C0 (`cmd completion zsh`) and use its
-   output when it exists; `generate-from-help` is C3; `fallback-help` is C8.
-   `check-fpath.zsh` remains available for manual diagnosis; preflight already
-   ran it.
+1. Act on `decision`: `stop` ends the task; when the reason is
+   `command-not-found`, ask whether to install the tool (install only when the
+   user or the project's `AGENTS.md` allows it) and rerun preflight.
+   `use-existing` means the native file already wins — use it, update only on
+   an explicit request, and do not copy or lint a package-manager file.
+   `choose-target` requires a writable directory from `target_candidates` or a
+   question; its reason distinguishes `target-not-selected`,
+   `no-writable-target`, and `target-not-writable`. `try-generator` means check
+   C0 (`cmd completion zsh`) and use its output when it exists;
+   `generate-from-help` is C3; `fallback-help` is C8. `check-fpath.zsh` remains
+   available for manual diagnosis; preflight already ran it.
 2. Collect help for every subcommand **through** `scripts/probe-help.zsh`.
    Call help manually only if the script is unavailable. For
    `fallback-help`, use C8 sources (man, `--help-all`, source, native
@@ -211,6 +215,11 @@ Trust rules by source (see `references/template.md`):
 So a failing body check on an `upstream` file is a signal that the metadata is
 wrong (the file is not what its header claims), not an invitation to edit it.
 
+Package-manager completions (Homebrew `site-functions`, a distro zsh directory)
+are C1/C2 sources. They do not carry `GWZCS-*` metadata and are not ours to
+lint: `check-completion.zsh` expects a path to a file we materialize. A
+metadata failure on a vendor file is expected, not a completion bug.
+
 ### L2: registration and dispatch
 
 ```zsh
@@ -255,7 +264,9 @@ Check at least:
 
 `--expect` checks for a substring, so `--expect htop` also passes for
 `htop-3.4.1-...`. Use `--expect-exact` for exact checks or inspect the full
-output.
+output. The captured text includes the echoed command line, so `--expect` and
+`--reject` must not use a value that is itself part of the test line; the
+harness rejects such an assertion instead of passing on the echo.
 
 ### Stop rules
 

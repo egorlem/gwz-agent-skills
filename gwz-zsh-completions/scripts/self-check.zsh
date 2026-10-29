@@ -247,7 +247,7 @@ __main() {
     $'demo remote \t' || failed=1
 
   __check "demo-alt service switch" "$harness" "$fixtures" demo-alt \
-    --expect alt --reject install \
+    --expect 'alt command' --reject install \
     $'demo-alt \t' || failed=1
 
   __check "demo-alt option" "$harness" "$fixtures" demo-alt \
