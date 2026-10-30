@@ -2,7 +2,7 @@
 # Lint a generated native zsh completion file.
 #
 # Usage:
-#   check-completion.zsh <path-to-_command>
+#   verify/lint.zsh <path-to-_command>
 #
 # Checks:
 # - first line starts with #compdef;

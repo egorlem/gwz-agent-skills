@@ -26,7 +26,7 @@ repository, the `completion-style-guide` shipped with zsh, and
 
 ## Path and shadowing
 
-- `scripts/check-fpath.zsh <cmd>` shows the environment `FPATH`, the interactive
+- `scripts/collect/fpath.zsh <cmd>` shows the environment `FPATH`, the interactive
   `fpath`, the clean `fpath` without `FPATH`, and every `_cmd` copy.
 - `FPATH` may be exported with stale values; `zsh -fc` and `zsh -ic` may show
   different paths. Check the clean variant:

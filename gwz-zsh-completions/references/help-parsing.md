@@ -33,7 +33,7 @@ LC_ALL=C LANG=C NO_COLOR=1 TERM=dumb COLUMNS=200 \
 Do not collect help manually: use the required helper:
 
 ```bash
-scripts/probe-help.zsh <cmd> <sub>
+scripts/collect/help.zsh <cmd> <sub>
 ```
 
 The script tries `--help`, `-h`, `help`, `--help-all`, checks for help markers,

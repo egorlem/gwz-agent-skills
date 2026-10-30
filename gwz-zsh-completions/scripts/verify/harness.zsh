@@ -2,7 +2,7 @@
 # Test a native zsh completion through a real interactive TAB.
 #
 # Usage:
-#   test-completion.zsh <fpath-dir> <command> [options] [test-line ...]
+#   verify/harness.zsh <fpath-dir> <command> [options] [test-line ...]
 #
 # Options:
 #   --expect TEXT        require TEXT in every test line's output; must not be
@@ -17,7 +17,7 @@
 # Test-line is sent to the interactive shell as-is. Put a literal TAB with
 # $'...' in the calling shell, e.g.:
 #
-#   test-completion.zsh <fpath-dir> mycmd \
+#   verify/harness.zsh <fpath-dir> mycmd \
 #     --expect --force --expect --repo \
 #     $'mycmd install --\t'
 #
@@ -34,7 +34,7 @@
 
 emulate -L zsh
 typeset -g SCRIPT_NAME=${0:t}
-source "${0:A:h}/lib.zsh"
+source "${0:A:h}/../lib/ansi.zsh"
 
 __usage() {
   print -u2 "usage: $SCRIPT_NAME <fpath-dir> <command> [options] [test-line ...]"

@@ -195,11 +195,11 @@ _preflight_os() {
 
 _preflight_fpath() {
   local -A fp
-  # Вывод check-fpath --porcelain, разобранный в ассоциативный массив.
+  # Вывод collect/fpath.zsh --porcelain, разобранный в ассоциативный массив.
 
   local line key value
-  for line in ${(f)"$(zsh "$DIR/check-fpath.zsh" --porcelain "${PREFLIGHT[cmd]}" 2>/dev/null)"}; do
-    # (f) режет по переводам строк. check-fpath — отдельный процесс намеренно:
+  for line in ${(f)"$(zsh "$DIR/collect/fpath.zsh" --porcelain "${PREFLIGHT[cmd]}" 2>/dev/null)"}; do
+    # (f) режет по переводам строк. collect/fpath.zsh — отдельный процесс намеренно:
     # он инкапсулирует interactive/clean fpath и порядок кандидатов, поэтому
     # здесь эта логика не дублируется.
 
@@ -271,9 +271,9 @@ _preflight_target_help() {
   fi
 
   local text
-  if text=$(zsh "$DIR/probe-help.zsh" "${PREFLIGHT[cmd]}" 2>/dev/null); then
+  if text=$(zsh "$DIR/collect/help.zsh" "${PREFLIGHT[cmd]}" 2>/dev/null); then
     PREFLIGHT[help]=ok
-    # probe-help уже перебирает --help/-h/help/--help-all и принимает только
+    # collect/help.zsh уже перебирает --help/-h/help/--help-all и принимает только
     # help-подобный вывод; здесь эта логика не повторяется.
 
     [[ ${text:l} == *completion* ]] && PREFLIGHT[completion_hint]=yes
@@ -309,9 +309,9 @@ _preflight_gate() {
   fi
 
   local g rc
-  g=$(zsh "$DIR/gate.zsh" 2>/dev/null)
+  g=$(zsh "$DIR/verify/gate.zsh" 2>/dev/null)
   rc=$?
-  # gate.zsh гоняет стенд на tests/fixtures/_demo. Его код возврата — это
+  # verify/gate.zsh гоняет стенд на tests/fixtures/_demo. Его код возврата — это
   # контракт: 0 pass, 1 fail, 77 no PTY. Вывод для решения не парсим.
 
   case $rc in

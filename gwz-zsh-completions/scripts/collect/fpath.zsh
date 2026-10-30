@@ -2,7 +2,7 @@
 # Показать, откуда берётся файл zsh-комплишена и какая копия выигрывает.
 #
 # Использование:
-#   check-fpath.zsh [--porcelain] <command>
+#   collect/fpath.zsh [--porcelain] <command>
 #
 # Обычный вывод — человеческий отчёт: FPATH из окружения, интерактивный fpath,
 # чистый fpath без FPATH и все копии _command в порядке приоритета. С

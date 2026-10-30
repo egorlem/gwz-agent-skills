@@ -2,7 +2,7 @@
 # Safely obtain help output from a command, with fallbacks.
 #
 # Usage:
-#   probe-help.zsh <command> [args...]
+#   collect/help.zsh <command> [args...]
 #
 # Tries: --help, -h, help, --help-all. Accepts a candidate only if it looks
 # like help (headings or option lines), even if the command exits non-zero.
@@ -13,7 +13,7 @@
 
 emulate -L zsh
 typeset -g SCRIPT_NAME=${0:t}
-source "${0:A:h}/lib.zsh"
+source "${0:A:h}/../lib/ansi.zsh"
 
 __usage() {
   print -u2 "usage: $SCRIPT_NAME <command> [args...]"

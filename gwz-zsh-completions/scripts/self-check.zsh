@@ -6,7 +6,7 @@
 # - frontmatter basics;
 # - harness assertions on the bundled fixture;
 # - linter behaviour on generator output (C0 form) and bash-compat negatives;
-# - probe-help fallback on a real command;
+# - help fallback on a real command;
 # - absence of commit hashes and machine-specific paths.
 
 emulate -L zsh
@@ -198,12 +198,12 @@ __check_no_paths() {
 __main() {
   local skill_dir=$SKILL_DIR
   local fixtures=$skill_dir/tests/fixtures
-  local harness=$skill_dir/scripts/test-completion.zsh
-  local probe=$skill_dir/scripts/probe-help.zsh
-  local fpath_tool=$skill_dir/scripts/check-fpath.zsh
+  local harness=$skill_dir/scripts/verify/harness.zsh
+  local probe=$skill_dir/scripts/collect/help.zsh
+  local fpath_tool=$skill_dir/scripts/collect/fpath.zsh
   local preflight=$skill_dir/scripts/preflight.zsh
-  local gate=$skill_dir/scripts/gate.zsh
-  local checker=$skill_dir/scripts/check-completion.zsh
+  local gate=$skill_dir/scripts/verify/gate.zsh
+  local checker=$skill_dir/scripts/verify/lint.zsh
   local -i failed=0
 
   local -x TEST_COMPLETION_STARTUP_WAIT=${TEST_COMPLETION_STARTUP_WAIT:-1.5}
@@ -213,16 +213,16 @@ __main() {
   # проверяются вручную и через сам preflight; self-check ловит только
   # синтаксическую деградацию.
   __check "zsh -n _demo" zsh -n "$fixtures/_demo" || failed=1
-  __check "zsh -n test-completion.zsh" zsh -n "$harness" || failed=1
-  __check "zsh -n probe-help.zsh" zsh -n "$probe" || failed=1
-  __check "zsh -n check-fpath.zsh" zsh -n "$fpath_tool" || failed=1
+  __check "zsh -n verify/harness.zsh" zsh -n "$harness" || failed=1
+  __check "zsh -n collect/help.zsh" zsh -n "$probe" || failed=1
+  __check "zsh -n collect/fpath.zsh" zsh -n "$fpath_tool" || failed=1
   __check "zsh -n preflight.zsh" zsh -n "$preflight" || failed=1
-  __check "zsh -n gate.zsh" zsh -n "$gate" || failed=1
-  __check "zsh -n check-completion.zsh" zsh -n "$checker" || failed=1
-  __check "check-completion fixture" __check_completion_tool "$checker" "$fixtures/_demo" || failed=1
-  __check "check-completion linter rules" __check_metadata_rules "$checker" || failed=1
-  __check "check-fpath output" __check_fpath_tool "$fpath_tool" || failed=1
-  __check "check-fpath porcelain" __check_fpath_porcelain "$fpath_tool" || failed=1
+  __check "zsh -n verify/gate.zsh" zsh -n "$gate" || failed=1
+  __check "zsh -n verify/lint.zsh" zsh -n "$checker" || failed=1
+  __check "lint fixture" __check_completion_tool "$checker" "$fixtures/_demo" || failed=1
+  __check "lint rules" __check_metadata_rules "$checker" || failed=1
+  __check "fpath output" __check_fpath_tool "$fpath_tool" || failed=1
+  __check "fpath porcelain" __check_fpath_porcelain "$fpath_tool" || failed=1
 
   __check "frontmatter" __check_frontmatter "$skill_dir/SKILL.md" || failed=1
 
@@ -258,7 +258,7 @@ __main() {
     --expect-empty \
     $'demo install --nope\t' || failed=1
 
-  __check "probe-help fallback" __check_probe "$probe" || failed=1
+  __check "help fallback" __check_probe "$probe" || failed=1
   __check "no commit hashes" __check_no_hashes "$skill_dir" || failed=1
   __check "no machine paths" __check_no_paths "$skill_dir" || failed=1
 

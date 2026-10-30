@@ -31,7 +31,7 @@ Use `#compdef`, `_arguments`, `_values`, `_describe`, `compadd`, `_files`,
 
 ## Source priority
 
-Check `$fpath` before generating anything: run `scripts/check-fpath.zsh <cmd>`.
+Check `$fpath` before generating anything: run `scripts/collect/fpath.zsh <cmd>`.
 If `_cmd` is already reachable, use it and stop (C1/C2 in `SKILL.md`). A second
 copy is not an improvement: `#compdef` and function names collide, and the copy
 in an earlier directory silently shadows the maintained one.
@@ -71,8 +71,8 @@ the clone and time.
 | Metadata that disagrees with the file | `GWZCS-Program: foo` in `_bar` | must equal the file name and the first word of `#compdef` |
 | Bash-compatible completion | `bashcompinit`, `COMP_WORDS`, `PIP_AUTO_COMPLETE` | native `#compdef`/`_arguments` |
 | Missing version in the metadata block | no `GWZCS-Program-Version` | `# GWZCS-Program-Version: 1.2.3`, `unknown`, or `n/a` for a wrapper |
-| Writing into a shadowed directory | a file in a later `fpath`, with an earlier `_cmd` already present | `check-fpath.zsh`, update the first one or ask |
-| Broad scan | `find /`, `grep -R $HOME` | `check-fpath.zsh`, `fpath`, `.zshrc` |
+| Writing into a shadowed directory | a file in a later `fpath`, with an earlier `_cmd` already present | `collect/fpath.zsh`, update the first one or ask |
+| Broad scan | `find /`, `grep -R $HOME` | `collect/fpath.zsh`, `fpath`, `.zshrc` |
 | Probing an argument with a mutating command | `rebase --opt` without dry-run | `--help`, man, source, `--dry-run` |
 | Helper named like a subcommand | helper `_cmd_kargs` and subcommand `_cmd_kargs` | `__cmd_kernel_args` |
 | `_call_program --qf` with a single `\n` | `'%{NAME}\n'` | `'%{NAME}\\n'` or no `--qf` |

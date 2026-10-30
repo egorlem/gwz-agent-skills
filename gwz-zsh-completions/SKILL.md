@@ -4,7 +4,7 @@ description: Generate, update, and review native zsh completion files (`_command
 license: WTFPL
 compatibility: Requires zsh with compinit; the test harness uses zpty.
 metadata:
-  version: "1.1.1"
+  version: "1.2.0"
 ---
 
 # Generating zsh completions
@@ -21,7 +21,7 @@ compatibility mode.
 Before generating, read the following after this file:
 
 1. `references/template.md` — skeleton, helper functions, option groups.
-2. `references/help-parsing.md` — `--help` formats, `probe-help`, fallback.
+2. `references/help-parsing.md` — `--help` formats, safe help probing, fallback.
 
 For review or debugging, read `references/zsh-patterns.md` and
 `references/anti-patterns.md`. Do not start writing a completion file before
@@ -37,11 +37,11 @@ reading template and help-parsing.
 - Take the target directory from the active `fpath`; do not guess.
   `scripts/preflight.zsh <cmd>` reports the interactive and clean `fpath`, the
   winning `_cmd`, `shadowed`, and `target_candidates`; use
-  `scripts/check-fpath.zsh <cmd>` for a human-readable list of every copy when
+  `scripts/collect/fpath.zsh <cmd>` for a human-readable list of every copy when
   diagnosing shadowing. If the target directory is not first, explain the
   shadowing instead of writing silently.
 - Do not scan `/` or the entire `$HOME`. Search only `fpath`, `.zshrc`,
-  `.zshenv`, and the target directories; use `check-fpath.zsh` to locate copies,
+  `.zshenv`, and the target directories; use `scripts/collect/fpath.zsh` to locate copies,
   not `find /`.
 - Do not probe option arity by running a mutating command. Use `--help`, man,
   source, or a documented `--dry-run` only. For `install`, `rebase`, `deploy`,
@@ -103,9 +103,9 @@ the spelling the tool documents.
    question; its reason distinguishes `target-not-selected`,
    `no-writable-target`, and `target-not-writable`. `try-generator` means check
    C0 (`cmd completion zsh`) and use its output when it exists;
-   `generate-from-help` is C3; `fallback-help` is C8. `check-fpath.zsh` remains
+   `generate-from-help` is C3; `fallback-help` is C8. `scripts/collect/fpath.zsh` remains
    available for manual diagnosis; preflight already ran it.
-2. Collect help for every subcommand **through** `scripts/probe-help.zsh`.
+2. Collect help for every subcommand **through** `scripts/collect/help.zsh`.
    If it cannot produce help-like output for a subcommand (for example,
    `--help` is taken as a positional), try `cmd help <sub>` or
    `cmd <sub> help`, then man. For `fallback-help`, use C8 sources (man,
@@ -125,7 +125,7 @@ environment supports, and report that level.
 
 | Level | Check | Passes when |
 | --- | --- | --- |
-| L1 | `zsh -n _cmd`, `scripts/check-completion.zsh _cmd` | both exit 0 |
+| L1 | `zsh -n _cmd`, `scripts/verify/lint.zsh _cmd` | both exit 0 |
 | L2 | registration and dispatch (below) | `_comps[cmd] == _cmd`; every dispatched `_cmd_<sub>` is defined |
 | L3 | a real TAB through `zpty` (below) | every asserted case passes |
 
@@ -137,20 +137,20 @@ the gate failed or was skipped (`--fast`), do not run L3 and do not change
 `_cmd` because of it. Finish at L2 and report
 `L3 skipped (gate failed)` or `L3 skipped (not probed)`.
 
-`scripts/gate.zsh` reproduces the result directly: 0 pass, 1 fail, 77 no PTY.
+`scripts/verify/gate.zsh` reproduces the result directly: 0 pass, 1 fail, 77 no PTY.
 It exercises `tests/fixtures/_demo`, not the target file.
 
 ### L1: syntax and lint
 
 ```zsh
 zsh -n _mycmd
-scripts/check-completion.zsh _mycmd
+scripts/verify/lint.zsh _mycmd
 ```
 
 Generator output (C0) is a delegating wrapper, not hand-written code: its
 metadata block carries `GWZCS-Program-Version: n/a`, it references
 `BASH_COMP_DEBUG_FILE` for debugging, and it reads `BASH_REMATCH`. That form is
-native zsh, and `check-completion.zsh` accepts it — see
+native zsh, and `scripts/verify/lint.zsh` accepts it — see
 `references/anti-patterns.md` → Native zsh only. The TAB assertions below still
 apply, because the wrapper inherits the CLI's own completion logic; also note
 the per-invocation process cost.
@@ -169,7 +169,7 @@ wrong (the file is not what its header claims), not an invitation to edit it.
 
 Package-manager completions (Homebrew `site-functions`, a distro zsh directory)
 are C1/C2 sources. They do not carry `GWZCS-*` metadata and are not ours to
-lint: `check-completion.zsh` expects a path to a file we materialize. A
+lint: `scripts/verify/lint.zsh` expects a path to a file we materialize. A
 metadata failure on a vendor file is expected, not a completion bug.
 
 ### L2: registration and dispatch
@@ -190,7 +190,7 @@ Test a real TAB (skill file paths are relative to the skill directory):
 
 ```zsh
 # from the skill directory
-scripts/test-completion.zsh <fpath-dir> mycmd
+scripts/verify/harness.zsh <fpath-dir> mycmd
 ```
 
 `<fpath-dir>` is any directory from the active `fpath`; do not hardcode it.
@@ -198,7 +198,7 @@ scripts/test-completion.zsh <fpath-dir> mycmd
 With assertions:
 
 ```zsh
-scripts/test-completion.zsh <fpath-dir> mycmd \
+scripts/verify/harness.zsh <fpath-dir> mycmd \
   --expect --help $'mycmd --\t'
 ```
 
@@ -270,15 +270,15 @@ as a completion bug.
   descriptions, escaping, debugging.
 - `references/anti-patterns.md` — historical mistakes, bash compatibility,
   system examples.
-- `scripts/check-fpath.zsh` — `FPATH`, interactive/clean `fpath`, shadowing;
+- `scripts/collect/fpath.zsh` — `FPATH`, interactive/clean `fpath`, shadowing;
   `--porcelain` prints key=value lines for the preflight.
 - `scripts/preflight.zsh` — key=value facts and the `decision`/
   `verification` fields; `--fast` skips gate/compinit.
-- `scripts/gate.zsh` — harness gate on the `_demo` fixture: 0 pass, 1 fail,
+- `scripts/verify/gate.zsh` — harness gate on the `_demo` fixture: 0 pass, 1 fail,
   77 no PTY.
-- `scripts/check-completion.zsh` — linter for a generated `_cmd`.
-- `scripts/test-completion.zsh` — zpty harness with `--expect`/`--reject`.
-- `scripts/probe-help.zsh` — safe help collection with fallback.
+- `scripts/verify/lint.zsh` — linter for a generated `_cmd`.
+- `scripts/verify/harness.zsh` — zpty harness with `--expect`/`--reject`.
+- `scripts/collect/help.zsh` — safe help collection with fallback.
 - `scripts/self-check.zsh` — skill self-check against the `_demo` fixture.
 
 Reference patterns and examples come from
