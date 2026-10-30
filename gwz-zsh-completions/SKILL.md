@@ -118,50 +118,6 @@ the spelling the tool documents.
    dispatch, L3 a real TAB only when `preflight.verification` includes `l3`.
    Stop at the highest level the environment supports and report it.
 
-## Minimal skeleton
-
-```zsh
-#compdef mycmd
-
-_mycmd() {
-  local curcontext="$curcontext" state line
-  typeset -A opt_args
-  local ret=1
-
-  _arguments -C \
-    '(-h --help)'{-h,--help}'[show help]' \
-    '--version[print version]' \
-    '1:command:_mycmd_commands' \
-    '*::arg:->args' && ret=0
-
-  case $state in
-    (args)
-      local func="_mycmd_${words[1]//-/_}"
-      if (( $+functions[$func] )); then
-        $func && ret=0
-      else
-        _default && ret=0
-      fi
-      ;;
-  esac
-
-  return ret
-}
-
-_mycmd_commands() {
-  local -a commands=(
-    'install:install packages'
-    'status:show status'
-  )
-  _describe -t commands 'mycmd command' commands
-}
-
-_mycmd "$@"
-```
-
-Subcommand functions, helpers, groups, and full option forms are in
-`references/template.md`.
-
 ## Verification
 
 Verification has three levels. Run them in order, stop at the highest level the
