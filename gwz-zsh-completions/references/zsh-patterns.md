@@ -190,7 +190,7 @@ _arguments -C \
   `'*:package:_packages'`, `'3::optional:_files'`.
 - Mutually exclusive: `'(--no-pub --pub)--pub[run pub]'`.
 - `help`/`version`: `'(- *)'{-h,--help}'[show help]'`.
-- Repeatable: `'(-d --decrypt)'\*{-r,--recipient=}'[encrypt]:RECIPIENT:'`.
+- Repeatable: `'*'{-r,--recipient=}'[encrypt]:RECIPIENT:'`; never `'\*...'`.
 - Optional argument: `'--opt[desc]::arg:_files'`.
 - Actions: `(a b c)`, `((a\:"desc a" b\:"desc b"))`, `->state`, `_files`,
   `{_values ...}`.
@@ -258,8 +258,8 @@ _describe -t packages 'package' pkgs
 
 - `_call_program` uses `eval`; quote user data with `${(q-)...}`.
 - Double `\n` in `--qf`: `'%{NAME}\\n'`, otherwise `eval` turns it into `n`.
-- Check external commands: `(( $+commands[jq] ))`,
-  `(( $+commands[ostree] ))`.
+- Only the target CLI is external; guard it with `(( $+commands[ostree] ))`.
+  No interpreter dependencies; see [Hard rules](../SKILL.md#hard-rules).
 - In-memory cache: `typeset -g _cache_...`.
 - Cache keyed by `$PWD`: keep the directory next to the cache.
 - Persistent cache: `_cache_invalid`, `_retrieve_cache`, `_store_cache`,

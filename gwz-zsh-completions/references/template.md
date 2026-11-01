@@ -235,7 +235,8 @@ Rules:
   `'-t=[desc]:tools:...'` makes `-t=` the option name.
 - Required argument: `:message:action`.
 - Optional argument: `::message:action`.
-- Repeatable option: `\*{-r,--recipient=}`.
+- Repeatable option: `'*'{-r,--recipient=}'[encrypt]:RECIPIENT:'`
+  (star outside quotes; never `'\*...'`).
 - Mutually exclusive options: `'(--no-pub --pub)--pub[run pub]'`.
 - `help`/`version`: `'(- *)'`.
 - Put every spec string in single quotes.
@@ -339,20 +340,17 @@ After renames, check for duplicates:
 grep -oE '^[_a-zA-Z][-_a-zA-Z0-9]*\(\) \{' _mycmd | sort | uniq -d
 ```
 
-**External dependencies:** check them with `$+commands[...]`, or the completion
-will silently be empty:
+**External dependencies:** only the target CLI may be called, and it must be
+guarded with `$+commands[...]`:
 
 ```zsh
 if (( $+commands[ostree] )); then
   refs=( ${(f)"$(_call_program refs ostree refs 2>/dev/null)"} )
 fi
-
-if (( $+commands[jq] )); then
-  revs+=(
-    ${(f)"$(print -r -- "$status_json" | jq -r '.deployments[].checksum // empty' 2>/dev/null)"}
-  )
-fi
 ```
+
+No interpreter dependencies: parse JSON with zsh parameter expansion or omit
+the dynamic value. See [Hard rules](../SKILL.md#hard-rules).
 
 ## Shared options via `reply`
 

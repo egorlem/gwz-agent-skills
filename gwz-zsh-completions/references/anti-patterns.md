@@ -76,7 +76,9 @@ the clone and time.
 | Probing an argument with a mutating command | `rebase --opt` without dry-run | `--help`, man, source, `--dry-run` |
 | Helper named like a subcommand | helper `_cmd_kargs` and subcommand `_cmd_kargs` | `__cmd_kernel_args` |
 | `_call_program --qf` with a single `\n` | `'%{NAME}\n'` | `'%{NAME}\\n'` or no `--qf` |
-| External command without a guard | `jq` without `$+commands[jq]` | guard + fallback |
+| Escaped repeatable star | `'\*--opt[desc]'` | `'*--opt[desc]'`; `'\*{-x,--xxx}'[...]'` → `'*'{-x,--xxx}'[...]'` |
+| Interpreter dependency | `node -e`, `python -c`, `jq` in `_call_program` | native zsh; see [Hard rules](../SKILL.md#hard-rules) |
+| Target CLI without a guard | `ostree` without `$+commands[ostree]` | guard + fallback |
 | Overstated verification | “all options verified” after `--help` | list the assertions that were made |
 | Success marked as an error | `_arguments ... && ret=1` | `&& ret=0` |
 | `_arguments` flags after specs | `_arguments -C "$args[@]" -A "-*"` | `_arguments -C -A "-*" "$args[@]"` |

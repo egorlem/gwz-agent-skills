@@ -20,7 +20,9 @@
 # - no duplicate function definitions;
 # - no single-backslash \n in _call_program --qf;
 # - no `=` inside a quoted brace group and no `-x=[...]` spec (both break
-#   option aliases; `{-x,--xxx}'=[...]'` with braces outside quotes is valid).
+#   option aliases; `{-x,--xxx}'=[...]'` with braces outside quotes is valid);
+# - no interpreter dependency (node/python/perl/ruby/php/jq/deno/bun);
+# - repeatable specs use '*--opt[...]' or '*'{-x,--xxx}'[...]', not '\*...'.
 
 emulate -L zsh
 typeset -g SCRIPT_NAME=${0:t}
@@ -174,6 +176,20 @@ __main() {
     failed=1
   else
     print -r -- 'ok: no bash-compatibility markers'
+  fi
+
+  if grep -qF "'\*" "$file"; then
+    print -r -- "FAIL: escaped repeatable star; use '*--opt[...]' or '*'{-x,--xxx}'[...]'"
+    failed=1
+  else
+    print -r -- 'ok: repeatable specs'
+  fi
+
+  if grep -nE '(_call_program[^#]*|\$\(|`)[[:space:]]*(node|python3?|perl|ruby|php|jq|deno|bun)([[:space:]]|$)' "$file" >/dev/null; then
+    print -r -- 'FAIL: interpreter dependency; use native zsh'
+    failed=1
+  else
+    print -r -- 'ok: no interpreter dependencies'
   fi
 
   local -a funcs

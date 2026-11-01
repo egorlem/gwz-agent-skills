@@ -4,7 +4,7 @@ description: Generate, update, and review native zsh completion files (`_command
 license: WTFPL
 compatibility: Requires zsh with compinit; the test harness uses zpty.
 metadata:
-  version: "1.2.0"
+  version: "1.2.1"
 ---
 
 # Generating zsh completions
@@ -34,6 +34,11 @@ reading template and help-parsing.
 - **Do not use** bash-compatible completions: `bashcompinit`, `COMP_WORDS`,
   `COMP_CWORD`, `BASH_COMP_*`, `_bash_completion`, bash arrays. This is an
   anti-pattern even when the script is shipped upstream.
+- Do not call interpreter runtimes from the completion: `node`, `python`/
+  `python3`, `perl`, `ruby`, `php`, `jq`, `deno`, `bun`, or similar. The
+  completion must work with zsh alone; use parameter expansion and
+  `_call_program` only for the target CLI. Do not add such a dependency to the
+  skill's scripts either.
 - Take the target directory from the active `fpath`; do not guess.
   `scripts/preflight.zsh <cmd>` reports the interactive and clean `fpath`, the
   winning `_cmd`, `shadowed`, and `target_candidates`; use
@@ -57,6 +62,9 @@ reading template and help-parsing.
 - `=` is allowed only on long options, and only after confirming the CLI
   accepts `--opt=value`; otherwise use the separate-word form.
   `{-t,--tools}'=[...]'` produces `-t=` and breaks the short form.
+- Repeatable option: `'*--foo[...]'` or `'*'{-f,--foo}'[...]'`. Never
+  `'\*...'` — inside single quotes the backslash is literal and `_arguments`
+  rejects the spec.
 - If global and subcommand options share a name, parse the top level with
   `'(-): :->command'` and `'(-)*:: :->args'`; otherwise the global option
   captures the subcommand option.
